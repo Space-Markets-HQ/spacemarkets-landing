@@ -271,6 +271,7 @@
     a:hover { color: #20D9FF; }
     @keyframes sm-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
     @keyframes sm-rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes sm-twinkle { 0%,100% { opacity: 0.2; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
   
 /* Hover/focus styles. In the original these were `style-hover` / `style-focus`
    attributes compiled into pseudo-classes whose declarations carry !important
@@ -301,9 +302,46 @@
   .sm-animated [data-reveal] { opacity: 1 !important; animation: none !important; }
 }
 
-/* Nav logo variants: full wordmark on desktop, standalone mark on mobile
-   (swapped in the media block below). */
-.sm-logo-mark { display: none; }
+/* Team: no portraits per stakeholder feedback — the bio floats in as a glass
+   panel anchored under the hovered card, out of flow, so the grid and the
+   content below it never reflow and no sibling card grows. Cards carry
+   tabindex, so keyboard focus reveals it too. Devices without hover get the
+   bio inline as static card text instead. */
+.sm-team-bio { position: absolute; top: calc(100% + 8px); left: 0; right: 0; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; background: rgba(5,10,16,0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 14px 16px; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.sm-team-card:hover, .sm-team-card:focus { z-index: 5; }
+.sm-team-card:hover .sm-team-bio, .sm-team-card:focus .sm-team-bio { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.sm-team-card:focus-visible { border-color: rgba(32,217,255,0.5) !important; }
+@media (hover: none) {
+  .sm-team-bio { position: static; margin-top: 12px; border: none; border-radius: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; opacity: 1; transform: none; pointer-events: auto; }
+}
+
+/* Partners: infinite logo marquee. The track holds two identical groups
+   (the second aria-hidden) and slides its own half-width per loop; each group
+   carries the same gap + trailing padding so the loop point is seamless.
+   Pauses on hover. Reduced motion swaps it for a static centered wrap. */
+@keyframes sm-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.sm-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); }
+.sm-marquee-track { display: flex; width: max-content; animation: sm-marquee 36s linear infinite; }
+.sm-marquee:hover .sm-marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .sm-stars-d span, .sm-stars-m span { animation: none !important; }
+  .sm-team-bio { transition: none; transform: none; }
+  .sm-marquee { -webkit-mask-image: none; mask-image: none; }
+  .sm-marquee-track { width: 100%; animation: none; }
+  .sm-marquee-group { flex-wrap: wrap !important; justify-content: center !important; width: 100%; row-gap: 20px !important; padding-right: 0 !important; }
+  .sm-marquee-dup { display: none !important; }
+}
+
+/* Mobile-only nav burger (shown in the media block below). */
+.sm-nav-burger { display: none; }
+
+/* ── Hero mid-band (tablet landscape / small laptop) ──────────────────
+   The design fixes the globe column at 600px for 1440-wide art; below
+   ~1280px that starves the copy column, so both columns go fluid. */
+@media (max-width: 1280px) and (min-width: 901px) {
+  .sm-hero-grid { grid-template-columns: 1fr 1fr !important; padding: 96px 40px 48px 48px !important; }
+  .sm-hero-globe-col { height: min(560px, 58vw) !important; margin-left: -56px !important; margin-right: -20px !important; }
+}
 
 /* ── Mobile / small tablet ─────────────────────────────────────────────
    The page's styles are inline (ported 1:1 from the original), so
@@ -311,26 +349,37 @@
    pattern as the hover styles: !important so they beat inline styles,
    media-scoped so desktop stays untouched. */
 @media (max-width: 900px) {
-  /* Nav: logo + CTA only; the anchor links move to the footer's link columns.
-     The full wordmark swaps for the standalone mark (brand "mark light"). */
+  /* Anchor offset for the shorter mobile nav */
+  html { scroll-padding-top: 72px; }
+
+  /* Nav, per the hero design: small wordmark + burger only; the CTA lives
+     in the menu overlay. Anchor links stay in the overlay + footer columns. */
   .sm-nav { padding: 12px 20px !important; }
   .sm-nav-links { gap: 20px !important; }
   .sm-nav-links > a { display: none !important; }
-  .sm-logo-full { display: none !important; }
-  .sm-logo-mark { display: block !important; }
+  .sm-logo-full { height: 22px !important; }
+  .sm-nav-cta { display: none !important; }
+  .sm-nav-burger { display: inline-flex !important; }
 
-  /* Hero: globe centered behind the copy, tighter type and padding.
-     The globe's satellite label divs overlap the copy at this size — hide them
-     (the WebGL canvas keeps rendering the orbits and satellites). */
-  .sm-hero-globe { right: 50% !important; transform: translate(50%, -50%) !important; width: min(88vw, 62vh) !important; min-width: 0 !important; }
-  .sm-hero-globe sm-globe > div { display: none !important; }
-  .sm-hero-overlay { background: radial-gradient(90% 70% at 50% 50%, rgba(3,7,11,0.78) 0%, rgba(3,7,11,0.45) 60%, rgba(3,7,11,0.15) 100%) !important; }
-  .sm-hero-content { padding: 100px 24px 150px !important; }
-  .sm-hero-h1 { font-size: clamp(38px, 11vw, 52px) !important; }
-  .sm-hero-ctas { flex-wrap: wrap !important; gap: 16px 24px !important; }
-  .sm-hero-backed { min-width: 0 !important; flex-wrap: wrap !important; }
-  .sm-hero-caption { left: 24px !important; bottom: 24px !important; max-width: 240px !important; }
-  .sm-hero-scroll { display: none !important; }
+  /* iOS zooms (and stays zoomed) on focusing inputs under 16px */
+  .sm-focus-input { font-size: 16px !important; }
+
+  /* Hero, per design: centered copy stack under the nav; the globe fills the
+     remaining height and bleeds off the sides/bottom. The star field swaps
+     to its mobile arrangement. */
+  .sm-stars-d { display: none !important; }
+  .sm-stars-m { display: block !important; }
+  .sm-hero-grid { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 0 !important; padding: 128px 24px 0 !important; }
+  .sm-hero-copy { align-items: center !important; text-align: center !important; }
+  .sm-hero-badge { margin-bottom: 18px !important; padding: 8px 14px !important; font-size: 11px !important; }
+  .sm-hero-badge span { font-size: 13px !important; }
+  /* 34px floor keeps "Orbital Assets" on one line down to 320px viewports */
+  .sm-hero-h1 { font-size: clamp(34px, 11vw, 44px) !important; line-height: 1.04 !important; }
+  .sm-hero-sub { margin-top: 16px !important; max-width: 32ch !important; font-size: 15px !important; }
+  .sm-hero-ctas { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; margin-top: 24px !important; }
+  .sm-hero-cta-main { min-height: 48px !important; font-size: 15px !important; }
+  .sm-hero-cta-ghost { font-size: 15px !important; }
+  .sm-hero-globe-col { height: auto !important; flex: 1 1 auto !important; min-height: 300px !important; margin: 4px -30px -40px !important; }
 
   /* Shared: sections that use padding: 0 40px */
   .sm-pad-x { padding-left: 20px !important; padding-right: 20px !important; }
@@ -358,6 +407,9 @@
   .sm-part-body { padding: 40px 20px 0 !important; }
   .sm-role-row { grid-template-columns: 2.5rem 1fr !important; gap: 4px 16px !important; }
   .sm-role-line { grid-column: 2 !important; }
+
+  /* Partners: smaller wordmarks */
+  .sm-partner-mark { font-size: 18px !important; }
 
   /* FAQ: stack columns */
   .sm-faq-grid { grid-template-columns: 1fr !important; gap: 40px !important; }

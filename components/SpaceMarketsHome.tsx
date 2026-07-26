@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Globe from "./Globe";
+import GlobeV2 from "./GlobeV2";
 
 interface Props {
   /** Optional URL of the promo film; empty string keeps the poster idle state. */
@@ -14,6 +14,9 @@ interface State {
   scrolled: boolean;
   contactOpen: boolean;
   contactSubmitted: boolean;
+  menuOpen: boolean;
+  /** ≤900px — switches the hero globe to its mobile framing (remounts it). */
+  isMobile: boolean;
   videoPlaying: boolean;
   faqOpen: number | null;
   smiActive: string | null;
@@ -25,12 +28,19 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
   static defaultProps = { videoUrl: "", liveFlicker: true };
 
   state: State = {
-    scrolled: false, contactOpen: false, contactSubmitted: false,
-    videoPlaying: false, faqOpen: 0, smiActive: null,
+    scrolled: false, contactOpen: false, contactSubmitted: false, menuOpen: false,
+    isMobile: false, videoPlaying: false, faqOpen: 0, smiActive: null,
     sel: {}, jitter: [0, 0, 0, 0],
   };
 
+  // Body scroll is unlocked synchronously (not via setState) so an anchor
+  // tap's default scroll, which fires before React re-renders, still works.
+  _closeMenu = () => { document.body.style.overflow = ""; this.setState({ menuOpen: false }); };
+
   _onScroll?: () => void;
+  _onKey?: (e: KeyboardEvent) => void;
+  _mql?: MediaQueryList;
+  _onMql?: () => void;
   _iv?: ReturnType<typeof setInterval>;
   _root = React.createRef<HTMLDivElement>();
   _io?: IntersectionObserver;
@@ -42,6 +52,12 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
     };
     window.addEventListener("scroll", this._onScroll, { passive: true });
     this._onScroll();
+    this._onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && this.state.menuOpen) this._closeMenu(); };
+    window.addEventListener("keydown", this._onKey);
+    this._mql = window.matchMedia("(max-width: 900px)");
+    this._onMql = () => this.setState({ isMobile: this._mql!.matches });
+    this._mql.addEventListener("change", this._onMql);
+    if (this._mql.matches) this.setState({ isMobile: true });
     if (this.props.liveFlicker !== false && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       this._iv = setInterval(() => {
         this.setState((st) => ({
@@ -77,6 +93,9 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
   }
   componentWillUnmount() {
     if (this._onScroll) window.removeEventListener("scroll", this._onScroll);
+    if (this._onKey) window.removeEventListener("keydown", this._onKey);
+    if (this._mql && this._onMql) this._mql.removeEventListener("change", this._onMql);
+    document.body.style.overflow = "";
     clearInterval(this._iv);
     this._io?.disconnect();
   }
@@ -153,6 +172,17 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
       navBlur: st.scrolled ? "blur(20px)" : "none",
       openContact: () => this.setState({ contactOpen: true, contactSubmitted: false }),
       closeContact: () => this.setState({ contactOpen: false }),
+      isMobile: st.isMobile,
+      menuOpen: st.menuOpen,
+      openMenu: () => { document.body.style.overflow = "hidden"; this.setState({ menuOpen: true }); },
+      closeMenu: this._closeMenu,
+      menuRequestAccess: () => { document.body.style.overflow = ""; this.setState({ menuOpen: false, contactOpen: true, contactSubmitted: false }); },
+      menuLinks: [
+        { label: "Markets", href: "#events" },
+        { label: "Leasing", href: "#markets" },
+        { label: "SMI", href: "#smi" },
+        { label: "Participants", href: "#infrastructure" },
+      ],
       stopProp: (e: React.MouseEvent) => e.stopPropagation(),
       submitContact: () => this.setState({ contactSubmitted: true }),
       contactOpen: st.contactOpen,
@@ -189,6 +219,12 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
         { index: "03", role: "Capital partners", line: "Price and hedge event risk." },
         { index: "04", role: "Builders", line: "Integrate the market layer." },
       ],
+      // Text wordmarks for now — swap for logo SVGs (drop files in
+      // /public/partners and render <img> in the marquee) when assets arrive.
+      partners: [
+        "Starcatcher", "Intuitive Machines", "Axiom", "StarCloud",
+        "Lunaverse", "Varda", "Coinbase Ventures",
+      ],
       // Placeholder roster — swap for the real team before launch.
       team: [
         { index: "01", name: "Ada Chen", role: "Co-founder · CEO", line: "Previously built settlement infrastructure at a major exchange." },
@@ -214,43 +250,92 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
           <div style={{ maxWidth: 1280, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <a href="#top" aria-label="Space Markets — home" style={{ display: "inline-flex", alignItems: "center" }}>
               <img className="sm-logo-full" src="/space-markets-logo.svg" alt="Space Markets" style={{ height: 28, width: "auto", display: "block" }} />
-              <img className="sm-logo-mark" src="/mark-light@2x.png" alt="Space Markets" style={{ height: 30, width: "auto" }} />
             </a>
             <div className="sm-nav-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
               <a href="#events" className="sm-hover-light" style={{ fontSize: 13, color: "#8E99AA" }}>Markets</a>
               <a href="#markets" className="sm-hover-light" style={{ fontSize: 13, color: "#8E99AA" }}>Leasing</a>
               <a href="#smi" className="sm-hover-light" style={{ fontSize: 13, color: "#8E99AA" }}>SMI</a>
               <a href="#infrastructure" className="sm-hover-light" style={{ fontSize: 13, color: "#8E99AA" }}>Participants</a>
-              <button type="button" onClick={v.openContact} className="sm-hover-bright" style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "none", borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 500, padding: "10px 20px", minHeight: 44, cursor: "pointer", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Request access <span aria-hidden="true" style={{ fontSize: 14 }}>↗</span></button>
+              <button type="button" onClick={v.openContact} className="sm-hover-bright sm-nav-cta" style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "none", borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 500, padding: "10px 20px", minHeight: 44, cursor: "pointer", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Request access <span aria-hidden="true" style={{ fontSize: 14 }}>↗</span></button>
+              <button type="button" onClick={v.openMenu} aria-label="Open menu" aria-expanded={v.menuOpen} aria-controls="sm-mobile-menu" className="sm-nav-burger" style={{ display: "none", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: 5, width: 44, height: 44, margin: "0 -8px", border: "none", background: "none", padding: "0 2px", cursor: "pointer" }}>
+                <span aria-hidden="true" style={{ display: "block", width: 22, height: 1.5, background: "#F5F8FF" }}></span>
+                <span aria-hidden="true" style={{ display: "block", width: 15, height: 1.5, background: "#F5F8FF" }}></span>
+              </button>
             </div>
           </div>
         </nav>
 
-        {/* PLATE 00 — HERO */}
-        <section id="top" data-screen-label="Hero" style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: "#03070B" }}>
-          <div className="sm-hero-globe" style={{ position: "absolute", top: "50%", right: "3vw", transform: "translateY(-50%)", width: "min(88vh,52vw)", aspectRatio: "1", minWidth: 520 }}>
-            <Globe style={{ position: "absolute", inset: 0 }} />
+        {/* MOBILE MENU */}
+        {v.menuOpen && (
+          <div id="sm-mobile-menu" role="dialog" aria-modal="true" aria-label="Menu" style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", background: "rgba(3,7,11,0.96)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+              <img src="/space-markets-logo.svg" alt="Space Markets" style={{ height: 22, width: "auto" }} />
+              <button type="button" onClick={v.closeMenu} aria-label="Close menu" className="sm-hover-light" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, margin: "0 -12px 0 0", border: "none", background: "none", color: "#8E99AA", fontSize: 26, cursor: "pointer" }}>×</button>
+            </div>
+            <nav aria-label="Site sections" style={{ display: "flex", flexDirection: "column", padding: "24px 20px 0" }}>
+              {v.menuLinks.map((l) => (
+                <a key={l.href} href={l.href} onClick={v.closeMenu} className="sm-hover-cyan" style={{ padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.08)", fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: 32, letterSpacing: "-0.02em", color: "#F5F8FF", transition: "color 0.2s" }}>{l.label}</a>
+              ))}
+            </nav>
+            <div style={{ marginTop: "auto", padding: "0 20px calc(24px + env(safe-area-inset-bottom))" }}>
+              <button type="button" onClick={v.menuRequestAccess} className="sm-hover-bright" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", boxSizing: "border-box", border: "none", borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 500, padding: "14px 26px", minHeight: 48, cursor: "pointer", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Request access <span aria-hidden="true">↗</span></button>
+              <a href="https://x.com/SpaceMarketsHQ" target="_blank" rel="noopener noreferrer" className="sm-hover-light" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44, marginTop: 10, fontSize: 13, color: "#8E99AA" }}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ width: 15, height: 15 }}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"></path></svg>Follow Space Markets on X</a>
+            </div>
           </div>
-          <div aria-hidden="true" className="sm-hero-overlay" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(52% 60% at 26% 50%, rgba(3,7,11,0.82) 0%, rgba(3,7,11,0.4) 60%, transparent 100%)" }}></div>
+        )}
 
-          <div className="sm-hero-content" style={{ position: "relative", zIndex: 10, maxWidth: 1280, margin: "0 auto", padding: "110px 40px 190px", minHeight: "100svh", display: "flex", flexDirection: "column", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ maxWidth: 640, display: "flex", flexDirection: "column", alignItems: "flex-start", animation: "sm-rise 0.7s ease-out both" }}>
+        {/* PLATE 00 — HERO (per the "Hero Final" design: star field + twinkles,
+            "Backed by" badge on top, side-by-side globe on desktop, stacked
+            centered copy with the globe below on mobile) */}
+        <section id="top" data-screen-label="Hero" style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: "#03070B" }}>
+          <div aria-hidden="true" className="sm-stars-d" style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(1px 1px at 6% 30%,rgba(207,224,255,0.5) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 16% 12%,rgba(207,224,255,0.55) 50%,transparent 51%),radial-gradient(1px 1px at 27% 74%,rgba(207,224,255,0.35) 50%,transparent 51%),radial-gradient(1px 1px at 38% 20%,rgba(207,224,255,0.45) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 48% 60%,rgba(207,224,255,0.4) 50%,transparent 51%),radial-gradient(1px 1px at 33% 46%,rgba(207,224,255,0.4) 50%,transparent 51%),radial-gradient(1px 1px at 10% 90%,rgba(207,224,255,0.4) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 42% 90%,rgba(207,224,255,0.45) 50%,transparent 51%)" }}>
+            <span style={{ position: "absolute", left: "22%", top: "16%", width: 3, height: 3, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 8px 2px rgba(32,217,255,0.5)", animation: "sm-twinkle 3.8s ease-in-out infinite" }}></span>
+            <span style={{ position: "absolute", left: "44%", top: "42%", width: 2, height: 2, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 7px 2px rgba(32,217,255,0.4)", animation: "sm-twinkle 4.8s ease-in-out 1.5s infinite" }}></span>
+            <span style={{ position: "absolute", left: "7%", top: "68%", width: 2, height: 2, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 7px 2px rgba(255,157,59,0.3)", animation: "sm-twinkle 5.4s ease-in-out 0.8s infinite" }}></span>
+          </div>
+          <div aria-hidden="true" className="sm-stars-m" style={{ display: "none", position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(1px 1px at 10% 14%,rgba(207,224,255,0.5) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 26% 6%,rgba(207,224,255,0.55) 50%,transparent 51%),radial-gradient(1px 1px at 44% 18%,rgba(207,224,255,0.4) 50%,transparent 51%),radial-gradient(1px 1px at 68% 9%,rgba(207,224,255,0.45) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 86% 22%,rgba(207,224,255,0.5) 50%,transparent 51%),radial-gradient(1px 1px at 92% 40%,rgba(207,224,255,0.35) 50%,transparent 51%),radial-gradient(1px 1px at 8% 42%,rgba(207,224,255,0.4) 50%,transparent 51%)" }}>
+            <span style={{ position: "absolute", left: "80%", top: "12%", width: 2, height: 2, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 7px 2px rgba(32,217,255,0.45)", animation: "sm-twinkle 4.2s ease-in-out infinite" }}></span>
+            <span style={{ position: "absolute", left: "14%", top: "30%", width: 3, height: 3, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 8px 2px rgba(32,217,255,0.5)", animation: "sm-twinkle 3.6s ease-in-out 1s infinite" }}></span>
+            <span style={{ position: "absolute", left: "60%", top: "46%", width: 2, height: 2, borderRadius: "50%", background: "#cfe0ff", boxShadow: "0 0 7px 2px rgba(255,157,59,0.3)", animation: "sm-twinkle 5s ease-in-out 0.5s infinite" }}></span>
+          </div>
 
-              <h1 className="sm-hero-h1" style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, fontSize: "clamp(52px,6.6vw,104px)", lineHeight: 0.98, letterSpacing: "-0.02em", color: "#F5F8FF" }}>Markets for<br /><span style={{ background: "linear-gradient(to right,#20D9FF,#0B6BFF)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", display: "inline-block", paddingBottom: "0.06em" }}>Orbital<br />Infrastructure</span></h1>
-              <p style={{ margin: "24px 0 0", maxWidth: "44ch", fontSize: 18, lineHeight: 1.65, color: "#8E99AA", textWrap: "pretty" }}>Price mission risk. Buy and sell orbital capacity. Settle when delivery is verified.</p>
-              <div className="sm-hero-ctas" style={{ display: "flex", alignItems: "center", gap: 32, marginTop: 36, pointerEvents: "auto" }}>
-                <a href="#events" className="sm-hover-bright-light" style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontSize: 14, fontWeight: 500, padding: "13px 26px", minHeight: 44, boxSizing: "border-box", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Explore markets <span aria-hidden="true">↗</span></a>
-                <button type="button" onClick={v.openContact} className="sm-hover-cyan" style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "none", background: "none", padding: 0, minHeight: 44, fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 500, color: "rgba(245,248,255,0.9)", cursor: "pointer", transition: "color 0.2s" }}>Request access <span aria-hidden="true" style={{ transition: "transform 0.2s" }}>→</span></button>
-              </div>
-              <div className="sm-hero-backed" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 44, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)", minWidth: 340 }}>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Backed by</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: "'Space Grotesk',sans-serif", fontSize: 24, fontWeight: 400, letterSpacing: "-0.02em", color: "#F5F8FF" }}><span aria-hidden="true" style={{ display: "inline-block", width: 21, height: 21, borderRadius: "50%", background: "#0B6BFF" }}></span>Coinbase Ventures</span>
+          <div className="sm-hero-grid" style={{ position: "relative", zIndex: 10, maxWidth: 1440, margin: "0 auto", minHeight: "100svh", boxSizing: "border-box", padding: "100px 64px 64px 80px", display: "grid", gridTemplateColumns: "1fr 600px", gap: 48, alignItems: "center" }}>
+            <div className="sm-hero-copy" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", animation: "sm-rise 0.7s ease-out both" }}>
+              <p className="sm-hero-badge" style={{ margin: "0 0 24px", display: "inline-flex", alignItems: "baseline", gap: 8, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", padding: "9px 18px", fontSize: 12, letterSpacing: "0.04em", color: "#8E99AA" }}>Backed by <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, fontWeight: 600, color: "#F5F8FF" }}>Coinbase Ventures</span></p>
+              <h1 className="sm-hero-h1" style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, fontSize: "clamp(44px,5.5vw,78px)", lineHeight: 1.02, letterSpacing: "-0.02em", color: "#F5F8FF" }}>Markets for<br /><span style={{ background: "linear-gradient(to right,#20D9FF,#0B6BFF)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", display: "inline-block", paddingBottom: "0.06em", whiteSpace: "nowrap" }}>Orbital Assets</span></h1>
+              <p className="sm-hero-sub" style={{ margin: "24px 0 0", maxWidth: "40ch", fontSize: 18, lineHeight: 1.65, color: "#8E99AA", textWrap: "pretty" }}>Price mission risk. Buy and sell orbital capacity. Settle when delivery is verified.</p>
+              <div className="sm-hero-ctas" style={{ display: "flex", alignItems: "center", gap: 32, marginTop: 36 }}>
+                <a href="#events" className="sm-hover-bright-light sm-hero-cta-main" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontSize: 14, fontWeight: 500, padding: "13px 26px", minHeight: 44, boxSizing: "border-box", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Explore markets <span aria-hidden="true">↗</span></a>
+                <button type="button" onClick={v.openContact} className="sm-hover-cyan sm-hero-cta-ghost" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "none", background: "none", padding: 0, minHeight: 44, fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 500, color: "rgba(245,248,255,0.9)", cursor: "pointer", transition: "color 0.2s" }}>Request access <span aria-hidden="true">→</span></button>
               </div>
             </div>
-            <p className="sm-hero-caption" style={{ position: "absolute", left: 40, bottom: 44, margin: 0, maxWidth: 340, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", lineHeight: 1.8, color: "#8E99AA" }}>ALT 550 KM — Orbit is now a place of business. Image: NASA.</p>
+            <div className="sm-hero-globe-col" style={{ position: "relative", height: "min(680px,76svh)", marginLeft: -110, marginRight: -56 }}>
+              {v.isMobile ? (
+                <GlobeV2 key="m" framing="ball" dawn="1" bloom="1.2" grain="false" zoom="1.08" sats="0" limb="0" style={{ position: "absolute", inset: 0 }} />
+              ) : (
+                <GlobeV2 key="d" framing="ball" dawn="1" bloom="1.2" grain="false" zoom="1.22" style={{ position: "absolute", inset: 0 }} />
+              )}
+            </div>
           </div>
-          <p aria-hidden="true" className="sm-hero-scroll" style={{ position: "absolute", right: 22, top: "50%", transform: "translateY(-50%)", margin: 0, writingMode: "vertical-rl", fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: "#8E99AA", zIndex: 11 }}>Scroll — Plate 01 / The Film</p>
-          <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 112, background: "linear-gradient(to bottom,transparent,#03070B)", pointerEvents: "none" }}></div>
+        </section>
+
+        {/* PARTNERS — full-bleed logo marquee under the hero (unnumbered band,
+            like FAQ) */}
+        <section id="partners" data-screen-label="Partners" style={{ marginTop: "clamp(48px,6vw,80px)", overflow: "hidden" }}>
+          <div className="sm-pad-x" style={{ maxWidth: 1280, margin: "0 auto", padding: "0 40px" }}>
+            <p data-reveal style={{ margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8E99AA" }}>Companies we&apos;ve worked with</p>
+          </div>
+          <div data-reveal className="sm-marquee" style={{ marginTop: 36, borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "30px 0" }}>
+            <div className="sm-marquee-track">
+              {[0, 1].map((dup) => (
+                <div key={dup} aria-hidden={dup === 1 || undefined} className={dup ? "sm-marquee-group sm-marquee-dup" : "sm-marquee-group"} style={{ display: "flex", alignItems: "center", gap: "clamp(48px,6vw,88px)", paddingRight: "clamp(48px,6vw,88px)", flexShrink: 0 }}>
+                  {v.partners.map((name) => (
+                    <span key={name} className="sm-partner-mark" style={{ whiteSpace: "nowrap", fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, fontSize: 22, letterSpacing: "-0.01em", color: "rgba(245,248,255,0.5)" }}>{name}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* PLATE 01 — THE FILM */}
@@ -273,7 +358,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
               <button type="button" onClick={v.playFilm} aria-label="Play the Space Markets film" style={{ position: "relative", display: "block", width: "100%", aspectRatio: "16/9", border: "1px solid rgba(255,255,255,0.15)", padding: 0, background: "#071421", cursor: "pointer", overflow: "hidden", textAlign: "left" }}>
                 <img src="/film-poster.jpg" alt="Sunrise over Earth's limb from orbit" className="sm-hover-zoom" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.85, transition: "transform 6s ease-out" }} />
                 <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(3,7,11,0.85),rgba(3,7,11,0.15) 45%,rgba(3,7,11,0.35))" }}></span>
-                <span className="sm-hover-play" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", display: "flex", alignItems: "center", justifyContent: "center", width: 88, height: 88, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.35)", background: "rgba(3,7,11,0.55)", backdropFilter: "blur(8px)", transition: "background 0.2s,border-color 0.2s" }}><span aria-hidden="true" style={{ width: 0, height: 0, borderStyle: "solid", borderWidth: "11px 0 11px 19px", borderColor: "transparent transparent transparent #F5F8FF", marginLeft: 5 }}></span></span>
+                <span className="sm-hover-play" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", display: "flex", alignItems: "center", justifyContent: "center", width: 88, height: 88, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.35)", background: "rgba(3,7,11,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", transition: "background 0.2s,border-color 0.2s" }}><span aria-hidden="true" style={{ width: 0, height: 0, borderStyle: "solid", borderWidth: "11px 0 11px 19px", borderColor: "transparent transparent transparent #F5F8FF", marginLeft: 5 }}></span></span>
                 <span style={{ position: "absolute", left: 28, bottom: 24, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(245,248,255,0.9)" }}>{v.filmCaption}</span>
                 <span style={{ position: "absolute", right: 28, bottom: 24, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "#8E99AA" }}>00:34 · Sound on</span>
               </button>
@@ -290,7 +375,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
           <div className="sm-events-wrap" style={{ position: "relative", zIndex: 2, maxWidth: 1280, margin: "0 auto", padding: "clamp(72px,8vw,110px) 40px clamp(56px,6vw,80px)" }}>
             <div data-reveal className="sm-events-head" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", alignItems: "end", gap: 48 }}>
               <div>
-                <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 02 — Event Markets · Initial wedge</p>
+                <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 02 — Event Markets · Initial wedge</p>
                 <h2 style={{ margin: "20px 0 0", maxWidth: "13ch", fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: "clamp(38px,4.8vw,64px)", lineHeight: 0.98, letterSpacing: "-0.045em", color: "#F5F8FF" }}>Price the events that shape orbit.</h2>
               </div>
               <p style={{ margin: "0 0 4px", maxWidth: "46ch", fontSize: 16, lineHeight: 1.65, color: "rgba(245,248,255,0.75)", textWrap: "pretty" }}>Launch windows, deployments, capacity milestones — priced as transparent Yes / No contracts, so operators and counterparties share one signal for planning and hedging.</p>
@@ -300,7 +385,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
               {v.markets.map((m, i) => (
-                <div key={m.id} data-reveal className="sm-hover-card" style={{ display: "flex", flexDirection: "column", gap: 0, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, background: "rgba(3,7,11,0.78)", backdropFilter: "blur(16px)", padding: "22px 22px 18px", transition: "border-color 0.2s,background 0.2s", animationDelay: `${i * 0.1}s` }}>
+                <div key={m.id} data-reveal className="sm-hover-card" style={{ display: "flex", flexDirection: "column", gap: 0, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, background: "rgba(3,7,11,0.78)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", padding: "22px 22px 18px", transition: "border-color 0.2s,background 0.2s", animationDelay: `${i * 0.1}s` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                     <p style={{ margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8E99AA" }}>{m.category}</p>
                     <p style={{ margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8E99AA" }}>Vol {m.volume}</p>
@@ -443,7 +528,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
             <img src="/participants-iss.jpg" alt="Copper-toned solar arrays of the International Space Station above a darkened night ocean" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
             <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(3,7,11,0.45),transparent 40%,#03070B)" }}></div>
             <div data-reveal className="sm-part-top" style={{ position: "relative", maxWidth: 1280, margin: "0 auto", width: "100%", padding: "110px 40px 0", boxSizing: "border-box" }}>
-              <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 06 — Who It's For</p>
+              <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 06 — Who It's For</p>
             </div>
             <div data-reveal className="sm-part-h2" style={{ position: "relative", maxWidth: 1280, margin: "0 auto", width: "100%", padding: "0 40px 60px", boxSizing: "border-box" }}>
               <h2 style={{ margin: 0, maxWidth: "13ch", fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: "clamp(44px,6vw,82px)", lineHeight: 0.98, letterSpacing: "-0.04em", color: "#F5F8FF" }}>Built for the orbital economy.</h2>
@@ -473,16 +558,12 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20, marginTop: 40 }}>
               {v.team.map((p, i) => (
-                <div key={p.index} data-reveal className="sm-hover-card" style={{ display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, background: "rgba(3,7,11,0.78)", transition: "border-color 0.2s,background 0.2s", animationDelay: `${i * 0.1}s` }}>
-                  <div style={{ position: "relative", aspectRatio: "4/5", background: "#071421", overflow: "hidden" }}>
-                    <img src="/team-placeholder.svg" alt="Placeholder team portrait" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(1)", transform: i % 2 ? "scaleX(-1)" : "none" }} />
-                    <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(3,7,11,0.9),rgba(3,7,11,0.15) 45%,rgba(11,107,255,0.10))" }}></span>
-                    <span style={{ position: "absolute", left: 16, top: 14, fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8E99AA" }}>{p.index}</span>
-                  </div>
-                  <div style={{ padding: "18px 20px 22px" }}>
-                    <h3 style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: 22, letterSpacing: "-0.02em", color: "#F5F8FF" }}>{p.name}</h3>
-                    <p style={{ margin: "6px 0 0", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#8E99AA" }}>{p.role}</p>
-                    <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.6, color: "#8E99AA", textWrap: "pretty" }}>{p.line}</p>
+                <div key={p.index} data-reveal tabIndex={0} className="sm-hover-card sm-team-card" style={{ position: "relative", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, background: "rgba(3,7,11,0.78)", padding: "22px 22px 24px", outline: "none", transition: "border-color 0.2s,background 0.2s", animationDelay: `${i * 0.1}s` }}>
+                  <p style={{ margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.1em", color: "#8E99AA" }}>{p.index}</p>
+                  <h3 style={{ margin: "18px 0 0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: 22, letterSpacing: "-0.02em", color: "#F5F8FF" }}>{p.name}</h3>
+                  <p style={{ margin: "8px 0 0", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#8E99AA" }}>{p.role}</p>
+                  <div className="sm-team-bio">
+                    <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#8E99AA", textWrap: "pretty" }}>{p.line}</p>
                   </div>
                 </div>
               ))}
@@ -519,7 +600,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
             <img src="/cta-twilight.jpg" alt="Earth's blue atmosphere at twilight with a crescent moon above the limb" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 34%" }} />
             <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(3,7,11,0.95),rgba(3,7,11,0.75) 50%,rgba(3,7,11,0.25))" }}></div>
             <div style={{ position: "relative", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-              <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 08 — Private Beta</p>
+              <p style={{ display: "inline-flex", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 999, background: "rgba(3,7,11,0.7)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", padding: "8px 14px", margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Plate 08 — Private Beta</p>
               <h2 style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 300, fontSize: "clamp(36px,5vw,58px)", lineHeight: 1.02, letterSpacing: "-0.02em", color: "#F5F8FF" }}>Join the private beta.</h2>
               <p style={{ margin: 0, maxWidth: "52ch", fontSize: 17, lineHeight: 1.65, color: "#8E99AA" }}>We're inviting operators, buyers, and builders shaping the orbital economy.</p>
               <button type="button" onClick={v.openContact} className="sm-hover-bright" style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 8, border: "none", borderRadius: 999, background: "#0B6BFF", color: "#F5F8FF", fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 500, padding: "13px 26px", minHeight: 44, cursor: "pointer", boxShadow: "0 0 28px rgba(11,107,255,0.35)", transition: "filter 0.2s" }}>Request access <span aria-hidden="true">↗</span></button>
@@ -565,8 +646,8 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 
         {/* CONTACT MODAL */}
         {v.contactOpen && (
-          <div role="dialog" aria-modal="true" aria-label="Request access" style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(3,7,11,0.8)", backdropFilter: "blur(12px)" }} onClick={v.closeContact}>
-            <div style={{ width: "100%", maxWidth: 480, borderRadius: 16, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(3,7,11,0.95)", backdropFilter: "blur(24px)", overflow: "hidden" }} onClick={v.stopProp}>
+          <div role="dialog" aria-modal="true" aria-label="Request access" style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(3,7,11,0.8)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }} onClick={v.closeContact}>
+            <div style={{ width: "100%", maxWidth: 480, borderRadius: 16, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(3,7,11,0.95)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", overflow: "hidden" }} onClick={v.stopProp}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
                 <p style={{ margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#8E99AA" }}>Request Access — Private Beta</p>
                 <button type="button" onClick={v.closeContact} aria-label="Close" className="sm-hover-light" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, margin: "-10px -14px -10px 0", border: "none", background: "none", color: "#8E99AA", fontSize: 20, cursor: "pointer" }}>×</button>
