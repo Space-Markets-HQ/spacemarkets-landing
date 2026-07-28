@@ -266,14 +266,13 @@
     _autoPhase() {
       const THREE = this._THREE;
       if (!THREE || !this._sats || !this._camera) return;
-      if (!this._p.labels) { this._sats.forEach((s) => { s.win = null; }); return; }
+      if (!this._p.labels) return;
       this._scene.updateMatrixWorld(true);
       const targets = [[0.78, 0.24], [0.56, 0.68], [0.3, 0.32]];
       const C = this._camera.position, S = this._root3.position, R = this._root3.scale.x * 1.03;
       this._sats.forEach((s, i) => {
         const t = targets[i % targets.length];
         const N = 256, step = Math.PI * 2 / N;
-        const valid = new Array(N).fill(false);
         let bestK = -1, bestD = Infinity;
         const v = new THREE.Vector3(), dir = new THREE.Vector3(), oc = new THREE.Vector3();
         for (let k = 0; k < N; k++) {
@@ -290,18 +289,12 @@
           if (p.z > 1) continue;
           const x = p.x * 0.5 + 0.5, y = -p.y * 0.5 + 0.5;
           if (x < 0.48 || x > 0.92 || y < 0.08 || y > 0.9) continue;
-          valid[k] = true;
           const d = Math.hypot(x - t[0], y - t[1]);
           if (d < bestD) { bestD = d; bestK = k; }
         }
-        if (bestK < 0) { s.win = null; return; }
-        let left = 0, right = 0;
-        while (left < N - 1 && valid[(bestK - left - 1 + N) % N]) left++;
-        while (right < N - 1 && valid[(bestK + right + 1) % N]) right++;
-        if (left + right >= N - 1) { s.win = null; s.angle = bestK * step; return; }
-        const start = ((bestK - left + N) % N) * step, end = ((bestK + right) % N) * step;
-        s.win = [start, end];
-        s.angle = bestK * step;
+        // starting angle only — sats orbit freely from here; labels fade out
+        // when the globe occludes them (see _renderFrame)
+        if (bestK >= 0) s.angle = bestK * step;
       });
     }
 
@@ -402,24 +395,30 @@
 
     _renderFrame(dt) {
       const THREE = this._THREE;
-      const TWO_PI = Math.PI * 2;
       for (const s of this._sats || []) {
         if (!this._reduced) { s.angle += s.speed * dt; s.sprite.rotation.y += dt * 0.25; }
-        if (s.win) {
-          const na = ((s.angle % TWO_PI) + TWO_PI) % TWO_PI;
-          const [w0, w1] = s.win;
-          const inWin = w0 <= w1 ? (na >= w0 && na <= w1) : (na >= w0 || na <= w1);
-          if (!inWin) s.angle = w0;
-        }
         s.sprite.position.set(Math.cos(s.angle) * s.r, 0, Math.sin(s.angle) * s.r);
       }
       this._scene.updateMatrixWorld(true);
       this._renderer.render(this._scene, this._camera);
       const W = this.clientWidth, H = this.clientHeight;
+      // hide labels while their satellite passes behind the globe (ray-sphere
+      // test from the camera, same as _autoPhase)
+      if (!this._camera || !this._root3) return;
+      const C = this._camera.position, S = this._root3.position, R = this._root3.scale.x * 1.03;
+      const dir = new THREE.Vector3(), oc = new THREE.Vector3();
       for (const s of this._sats || []) {
         if (s.el) {
           const v = new THREE.Vector3();
           s.sprite.getWorldPosition(v);
+          dir.copy(v).sub(C); const L = dir.length(); dir.normalize();
+          oc.copy(S).sub(C);
+          const tca = oc.dot(dir), d2 = oc.lengthSq() - tca * tca;
+          let occluded = false;
+          if (d2 < R * R) {
+            const t0 = tca - Math.sqrt(R * R - d2);
+            occluded = t0 > 0 && t0 < L - 0.01;
+          }
           v.project(this._camera);
           const x = (v.x * 0.5 + 0.5) * W;
           const y = (-v.y * 0.5 + 0.5) * H;
@@ -429,7 +428,7 @@
           const inset = 8 + (this._p.labelInset || 0);
           lx = Math.max(inset, Math.min(W - labelW - inset, lx));
           const ly = y - labelH - 12;
-          const hidden = v.z > 1 || ly < 4 || y < 0 || y > H;
+          const hidden = occluded || v.z > 1 || ly < 4 || y < 0 || y > H;
           s.el.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`;
           s.el.style.opacity = hidden ? '0' : '1';
         }
