@@ -730,7 +730,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 							</p>
 							<div className='sm-hero-ctas' style={{display: 'flex', alignItems: 'center', gap: 32, marginTop: 36}}>
 								<a
-									href='#events'
+									href='https://markets.spacemarkets.com'
 									className='sm-hover-bright-light sm-hero-cta-main'
 									style={{
 										display: 'inline-flex',
