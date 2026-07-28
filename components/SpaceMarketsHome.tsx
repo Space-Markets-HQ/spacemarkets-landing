@@ -297,26 +297,6 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 				{index: '03', role: 'Capital partners', line: 'Price and hedge event risk.'},
 				{index: '04', role: 'Builders', line: 'Integrate the market layer.'}
 			],
-			// Text wordmarks for now — swap for logo SVGs (drop files in
-			// /public/partners and render <img> in the marquee) when assets arrive.
-			partners: ['Starcatcher', 'Intuitive Machines', 'Axiom', 'StarCloud', 'Lunaverse', 'Varda', 'Coinbase Ventures'],
-			// Placeholder roster — swap for the real team before launch.
-			team: [
-				{index: '01', name: 'Ada Chen', role: 'Co-founder · CEO', line: 'Previously built settlement infrastructure at a major exchange.'},
-				{
-					index: '02',
-					name: 'Marcus Osei',
-					role: 'Co-founder · CTO',
-					line: 'Led flight software and ground systems for smallsat constellations.'
-				},
-				{index: '03', name: 'Yuki Tanaka', role: 'Head of Markets', line: 'Designed event-market products across crypto and commodities.'},
-				{
-					index: '04',
-					name: 'Priya Raman',
-					role: 'Head of Partnerships',
-					line: 'A decade brokering launch and capacity deals across the industry.'
-				}
-			],
 			faqs: FAQS.map((f, i) => ({
 				...f,
 				open: st.faqOpen === i,
@@ -379,13 +359,13 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 							<a href='#infrastructure' className='sm-hover-light' style={{fontSize: 13, color: '#8E99AA'}}>
 								Participants
 							</a>
-							<button
-								type='button'
-								onClick={v.openContact}
+							<a
+								href='https://markets.spacemarkets.com'
 								className='sm-hover-bright sm-nav-cta'
 								style={{
 									display: 'inline-flex',
 									alignItems: 'center',
+									boxSizing: 'border-box',
 									gap: 8,
 									border: 'none',
 									borderRadius: 999,
@@ -398,14 +378,15 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 									minHeight: 44,
 									cursor: 'pointer',
 									boxShadow: '0 0 28px rgba(11,107,255,0.35)',
-									transition: 'filter 0.2s'
+									transition: 'filter 0.2s',
+									textDecoration: 'none'
 								}}
 							>
-								Request access{' '}
+								Explore markets{' '}
 								<span aria-hidden='true' style={{fontSize: 14}}>
 									↗
 								</span>
-							</button>
+							</a>
 							<button
 								type='button'
 								onClick={v.openMenu}
@@ -533,7 +514,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 									transition: 'filter 0.2s'
 								}}
 							>
-								Request access <span aria-hidden='true'>↗</span>
+								Contact Us <span aria-hidden='true'>↗</span>
 							</button>
 							<a
 								href='https://x.com/SpaceMarketsHQ'
@@ -709,7 +690,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 								}}
 							>
 								Backed by{' '}
-								<span style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, fontWeight: 600, color: '#F5F8FF'}}>
+								<span style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, fontWeight: 600, color: '#0052FF'}}>
 									Coinbase Ventures
 								</span>
 							</p>
@@ -791,7 +772,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 										transition: 'color 0.2s'
 									}}
 								>
-									Request access <span aria-hidden='true'>→</span>
+									Contact Us <span aria-hidden='true'>→</span>
 								</button>
 							</div>
 						</div>
@@ -814,70 +795,6 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 							) : (
 								<GlobeV2 key='d' framing='ball' dawn='1' bloom='1.2' grain='false' zoom='1.22' style={{position: 'absolute', inset: 0}} />
 							)}
-						</div>
-					</div>
-				</section>
-
-				{/* PARTNERS — full-bleed logo marquee under the hero (unnumbered band,
-            like FAQ) */}
-				<section id='partners' data-screen-label='Partners' style={{marginTop: 'clamp(48px,6vw,80px)', overflow: 'hidden'}}>
-					<div className='sm-pad-x' style={{maxWidth: 1280, margin: '0 auto', padding: '0 40px'}}>
-						<p
-							data-reveal
-							style={{
-								margin: 0,
-								fontFamily: "'JetBrains Mono',monospace",
-								fontSize: 10,
-								letterSpacing: '0.2em',
-								textTransform: 'uppercase',
-								color: '#8E99AA'
-							}}
-						>
-							Companies we&apos;ve worked with
-						</p>
-					</div>
-					<div
-						data-reveal
-						className='sm-marquee'
-						style={{
-							marginTop: 36,
-							borderTop: '1px solid rgba(255,255,255,0.08)',
-							borderBottom: '1px solid rgba(255,255,255,0.08)',
-							padding: '30px 0'
-						}}
-					>
-						<div className='sm-marquee-track'>
-							{[0, 1].map((dup) => (
-								<div
-									key={dup}
-									aria-hidden={dup === 1 || undefined}
-									className={dup ? 'sm-marquee-group sm-marquee-dup' : 'sm-marquee-group'}
-									style={{
-										display: 'flex',
-										alignItems: 'center',
-										gap: 'clamp(48px,6vw,88px)',
-										paddingRight: 'clamp(48px,6vw,88px)',
-										flexShrink: 0
-									}}
-								>
-									{v.partners.map((name) => (
-										<span
-											key={name}
-											className='sm-partner-mark'
-											style={{
-												whiteSpace: 'nowrap',
-												fontFamily: "'Space Grotesk',sans-serif",
-												fontWeight: 400,
-												fontSize: 22,
-												letterSpacing: '-0.01em',
-												color: 'rgba(245,248,255,0.5)'
-											}}
-										>
-											{name}
-										</span>
-									))}
-								</div>
-							))}
 						</div>
 					</div>
 				</section>
@@ -2021,101 +1938,6 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 					</div>
 				</section>
 
-				{/* PLATE 07 — TEAM */}
-				<section id='team' data-screen-label='Team' className='sm-pad-x' style={{marginTop: 'clamp(96px,10vw,120px)', padding: '0 40px'}}>
-					<div style={{maxWidth: 1280, margin: '0 auto'}}>
-						<div data-reveal>
-							<p
-								style={{
-									display: 'inline-flex',
-									border: '1px solid rgba(255,255,255,0.15)',
-									borderRadius: 999,
-									background: 'rgba(3,7,11,0.7)',
-									padding: '8px 14px',
-									margin: 0,
-									fontFamily: "'JetBrains Mono',monospace",
-									fontSize: 10,
-									letterSpacing: '0.22em',
-									textTransform: 'uppercase',
-									color: '#8E99AA'
-								}}
-							>
-								Plate 07 — Who's Building It
-							</p>
-							<h2
-								style={{
-									margin: '20px 0 0',
-									maxWidth: '15ch',
-									fontFamily: "'Space Grotesk',sans-serif",
-									fontWeight: 300,
-									fontSize: 'clamp(38px,4.3vw,58px)',
-									lineHeight: 0.98,
-									letterSpacing: '-0.04em',
-									color: '#F5F8FF'
-								}}
-							>
-								The people behind the markets.
-							</h2>
-							<p style={{margin: '24px 0 0', maxWidth: '46ch', fontSize: 17, lineHeight: 1.65, color: '#8E99AA', textWrap: 'pretty'}}>
-								Operators, market designers, and engineers from across the space and crypto economies.
-							</p>
-						</div>
-						<div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 20, marginTop: 40}}>
-							{v.team.map((p, i) => (
-								<div
-									key={p.index}
-									data-reveal
-									tabIndex={0}
-									className='sm-hover-card sm-team-card'
-									style={{
-										position: 'relative',
-										display: 'flex',
-										flexDirection: 'column',
-										border: '1px solid rgba(255,255,255,0.12)',
-										borderRadius: 16,
-										background: 'rgba(3,7,11,0.78)',
-										padding: '22px 22px 24px',
-										outline: 'none',
-										transition: 'border-color 0.2s,background 0.2s',
-										animationDelay: `${i * 0.1}s`
-									}}
-								>
-									<p style={{margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.1em', color: '#8E99AA'}}>
-										{p.index}
-									</p>
-									<h3
-										style={{
-											margin: '18px 0 0',
-											fontFamily: "'Space Grotesk',sans-serif",
-											fontWeight: 300,
-											fontSize: 22,
-											letterSpacing: '-0.02em',
-											color: '#F5F8FF'
-										}}
-									>
-										{p.name}
-									</h3>
-									<p
-										style={{
-											margin: '8px 0 0',
-											fontFamily: "'JetBrains Mono',monospace",
-											fontSize: 9,
-											letterSpacing: '0.18em',
-											textTransform: 'uppercase',
-											color: '#8E99AA'
-										}}
-									>
-										{p.role}
-									</p>
-									<div className='sm-team-bio'>
-										<p style={{margin: 0, fontSize: 14, lineHeight: 1.6, color: '#8E99AA', textWrap: 'pretty'}}>{p.line}</p>
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-				</section>
-
 				{/* FAQ */}
 				<section
 					id='faq'
@@ -2204,7 +2026,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 					</div>
 				</section>
 
-				{/* PLATE 08 — FINAL CTA */}
+				{/* PLATE 07 — FINAL CTA */}
 				<section
 					id='request-access'
 					data-screen-label='Final CTA'
@@ -2266,7 +2088,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 									color: '#8E99AA'
 								}}
 							>
-								Plate 08 — Private Beta
+								Plate 07 — Private Beta
 							</p>
 							<h2
 								style={{
@@ -2307,7 +2129,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 									transition: 'filter 0.2s'
 								}}
 							>
-								Request access <span aria-hidden='true'>↗</span>
+								Contact Us <span aria-hidden='true'>↗</span>
 							</button>
 						</div>
 					</div>
@@ -2373,7 +2195,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 											FAQ
 										</a>
 										<a href='#request-access' className='sm-hover-light' style={{padding: '10px 0', fontSize: 14, color: '#8E99AA'}}>
-											Request Access
+											Contact Us
 										</a>
 									</div>
 								</div>
@@ -2403,7 +2225,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 					<div
 						role='dialog'
 						aria-modal='true'
-						aria-label='Request access'
+						aria-label='Contact Us'
 						style={{
 							position: 'fixed',
 							inset: 0,
@@ -2451,7 +2273,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 										color: '#8E99AA'
 									}}
 								>
-									Request Access — Private Beta
+									Contact Us — Private Beta
 								</p>
 								<button
 									type='button'

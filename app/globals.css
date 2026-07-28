@@ -302,34 +302,8 @@
   .sm-animated [data-reveal] { opacity: 1 !important; animation: none !important; }
 }
 
-/* Team: no portraits per stakeholder feedback — the bio floats in as a glass
-   panel anchored under the hovered card, out of flow, so the grid and the
-   content below it never reflow and no sibling card grows. Cards carry
-   tabindex, so keyboard focus reveals it too. Devices without hover get the
-   bio inline as static card text instead. */
-.sm-team-bio { position: absolute; top: calc(100% + 8px); left: 0; right: 0; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; background: rgba(5,10,16,0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 14px 16px; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
-.sm-team-card:hover, .sm-team-card:focus { z-index: 5; }
-.sm-team-card:hover .sm-team-bio, .sm-team-card:focus .sm-team-bio { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.sm-team-card:focus-visible { border-color: rgba(32,217,255,0.5) !important; }
-@media (hover: none) {
-  .sm-team-bio { position: static; margin-top: 12px; border: none; border-radius: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; opacity: 1; transform: none; pointer-events: auto; }
-}
-
-/* Partners: infinite logo marquee. The track holds two identical groups
-   (the second aria-hidden) and slides its own half-width per loop; each group
-   carries the same gap + trailing padding so the loop point is seamless.
-   Pauses on hover. Reduced motion swaps it for a static centered wrap. */
-@keyframes sm-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.sm-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); }
-.sm-marquee-track { display: flex; width: max-content; animation: sm-marquee 36s linear infinite; }
-.sm-marquee:hover .sm-marquee-track { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
   .sm-stars-d span, .sm-stars-m span { animation: none !important; }
-  .sm-team-bio { transition: none; transform: none; }
-  .sm-marquee { -webkit-mask-image: none; mask-image: none; }
-  .sm-marquee-track { width: 100%; animation: none; }
-  .sm-marquee-group { flex-wrap: wrap !important; justify-content: center !important; width: 100%; row-gap: 20px !important; padding-right: 0 !important; }
-  .sm-marquee-dup { display: none !important; }
 }
 
 /* Mobile-only nav burger (shown in the media block below). */
@@ -407,9 +381,6 @@
   .sm-part-body { padding: 40px 20px 0 !important; }
   .sm-role-row { grid-template-columns: 2.5rem 1fr !important; gap: 4px 16px !important; }
   .sm-role-line { grid-column: 2 !important; }
-
-  /* Partners: smaller wordmarks */
-  .sm-partner-mark { font-size: 18px !important; }
 
   /* FAQ: stack columns */
   .sm-faq-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
