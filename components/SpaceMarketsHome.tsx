@@ -361,7 +361,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 								Participants
 							</a>
 							<a
-								href='https://markets.spacemarkets.com'
+								href='https://www.smx.space/app/markets'
 								className='sm-hover-bright sm-nav-cta'
 								style={{
 									display: 'inline-flex',
@@ -762,7 +762,7 @@ export default class SpaceMarketsHome extends React.Component<Props, State> {
 							</p>
 							<div className='sm-hero-ctas' style={{display: 'flex', alignItems: 'center', gap: 32, marginTop: 36}}>
 								<a
-									href='https://markets.spacemarkets.com'
+									href='https://www.smx.space/app/markets'
 									className='sm-hover-bright-light sm-hero-cta-main'
 									style={{
 										display: 'inline-flex',
